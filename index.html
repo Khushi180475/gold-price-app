@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gold Price Comparator & Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-light: #f7fafc;
+            --background-dark: #1a202c;
+            --text-light: #2d3748;
+            --text-dark: #e2e8f0;
+            --card-bg-light: #ffffff;
+            --card-bg-dark: #2d3748;
+            --border-light: #e2e8f0;
+            --border-dark: #4a5568;
+            --primary-color: #f59e0b; /* Amber */
+        }
+        html.light {
+            background-color: var(--background-light);
+            color: var(--text-light);
+        }
+        html.dark {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .card {
+            background-color: var(--card-bg-light);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-light);
+            transition: background-color 0.3s, border-color 0.3s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        html.dark .card {
+            background-color: var(--card-bg-dark);
+            border-color: var(--border-dark);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #d97706; /* Amber-600 */
+        }
+        .nav-link {
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .cheapest {
+            border: 2px solid #10b981; /* Green-500 */
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+        /* Custom scrollbar for dark mode */
+        html.dark ::-webkit-scrollbar {
+            width: 12px;
+        }
+        html.dark ::-webkit-scrollbar-track {
+            background: var(--background-dark);
+        }
+        html.dark ::-webkit-scrollbar-thumb {
+            background-color: var(--border-dark);
+            border-radius: 20px;
+            border: 3px solid var(--background-dark);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header & Navbar -->
+    <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50 transition-colors duration-300">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="#" class="flex-shrink-0 text-2xl font-bold text-amber-500">
+                        <i class="fas fa-coins mr-2"></i>GoldHub
+                    </a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#calculator" class="nav-link px-3 py-2 rounded-md text-sm font-medium active">Calculator</a>
+                        <a href="#compare" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Compare</a>
+                        <a href="#trends" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Trends</a>
+                        <a href="#news" class="nav-link px-3 py-2 rounded-md text-sm font-medium">News</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                     <button id="theme-toggle" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="hidden ml-4 btn-primary text-sm">Login</button>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#calculator" class="nav-link block px-3 py-2 rounded-md text-base font-medium active">Calculator</a>
+                <a href="#compare" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Compare</a>
+                <a href="#trends" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Trends</a>
+                <a href="#news" class="nav-link block px-3 py-2 rounded-md text-base font-medium">News</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Calculator Section -->
+        <section id="calculator" class="section active">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Calculator -->
+                <div class="lg:col-span-2 card p-6">
+                    <h2 class="text-2xl font-bold mb-6">Gold Price Calculator</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight</label>
+                            <input type="number" id="weight" value="10" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="unit" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit</label>
+                            <select id="unit" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm">
+                                <option value="gram" selected>Grams (g)</option>
+                                <option value="kg">Kilograms (kg)</option>
+                                <option value="tola">Tolas</option>
+                                <option value="ounce">Ounces (oz)</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label for="purity-calc" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Purity</label>
+                            <select id="purity-calc" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm">
+                                <option value="24">24K (99.9%)</option>
+                                <option value="22" selected>22K (91.6%)</option>
+                                <option value="18">18K (75.0%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="currency" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Currency</label>
+                            <select id="currency" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm">
+                                <option value="INR" selected>Indian Rupee (INR)</option>
+                                <option value="USD">US Dollar (USD)</option>
+                                <option value="AED">UAE Dirham (AED)</option>
+                                <option value="EUR">Euro (EUR)</option>
+                                <option value="GBP">British Pound (GBP)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-8 p-6 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-center">
+                        <p class="text-lg text-gray-600 dark:text-gray-400">Calculated Price</p>
+                        <p id="calculated-price" class="text-4xl font-extrabold text-amber-600 dark:text-amber-400 mt-2">₹--</p>
+                        <p id="live-rate-display" class="text-sm text-gray-500 dark:text-gray-400 mt-2">Live Rate: ₹--/gram (24K)</p>
+                    </div>
+                </div>
+
+                <!-- Side Panels -->
+                <div class="space-y-8">
+                    <!-- EMI Calculator -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold mb-4">EMI Calculator</h3>
+                        <div class="space-y-4">
+                             <div>
+                                <label for="emi-amount" class="block text-sm font-medium">Total Amount</label>
+                                <input type="number" id="emi-amount" placeholder="e.g., 50000" class="mt-1 w-full input-field">
+                            </div>
+                            <div>
+                                <label for="emi-interest" class="block text-sm font-medium">Interest Rate (% p.a.)</label>
+                                <input type="number" id="emi-interest" value="12" class="mt-1 w-full input-field">
+                            </div>
+                            <div>
+                                <label for="emi-tenure" class="block text-sm font-medium">Tenure (Months)</label>
+                                <input type="number" id="emi-tenure" value="12" class="mt-1 w-full input-field">
+                            </div>
+                            <button id="calculate-emi-btn" class="w-full btn-primary text-sm py-2">Calculate EMI</button>
+                            <div id="emi-result" class="text-center font-bold text-amber-600 dark:text-amber-400 mt-4"></div>
+                        </div>
+                    </div>
+                     <!-- Investment Insights -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center"><i class="fas fa-lightbulb mr-2 text-amber-500"></i>Investment Insights</h3>
+                        <div id="investment-insight" class="text-center p-4 rounded-lg">
+                           <!-- Dynamic content here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Compare Section -->
+        <section id="compare" class="section">
+            <h2 class="text-2xl font-bold mb-6">Compare Gold Prices</h2>
+            <div id="comparison-table" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Comparison cards will be injected here -->
+            </div>
+        </section>
+
+        <!-- Trends Section -->
+        <section id="trends" class="section">
+            <h2 class="text-2xl font-bold mb-6">Historical Price Trends</h2>
+             <div class="card p-6">
+                <div class="flex flex-wrap items-center justify-between mb-4 gap-4">
+                    <div class="flex items-center space-x-4">
+                        <label for="chart-currency" class="font-medium">Currency:</label>
+                        <select id="chart-currency" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-amber-500 focus:ring-amber-500 text-sm">
+                             <option value="INR" selected>INR</option>
+                             <option value="USD">USD</option>
+                             <option value="AED">AED</option>
+                        </select>
+                    </div>
+                    <div id="chart-timeframe" class="flex space-x-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
+                        <button data-days="7" class="timeframe-btn bg-white dark:bg-gray-900 text-amber-600 shadow rounded-md px-3 py-1 text-sm font-semibold">7D</button>
+                        <button data-days="30" class="timeframe-btn px-3 py-1 text-sm font-semibold">1M</button>
+                        <button data-days="180" class="timeframe-btn px-3 py-1 text-sm font-semibold">6M</button>
+                        <button data-days="365" class="timeframe-btn px-3 py-1 text-sm font-semibold">1Y</button>
+                    </div>
+                </div>
+                <canvas id="gold-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- News Section -->
+        <section id="news" class="section">
+             <h2 class="text-2xl font-bold mb-6">Gold Market News</h2>
+             <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- News articles will be injected here -->
+             </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-white dark:bg-gray-800 mt-12 py-6 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
+        <div class="container mx-auto text-center text-gray-500 dark:text-gray-400 text-sm">
+            <p>&copy; 2025 GoldHub. All Rights Reserved.</p>
+            <p class="mt-1">Disclaimer: Prices are indicative and may vary.</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- MOCK DATA & CONFIG ---
+    const MOCK_API_DATA = {
+        liveRates: { // Per gram 24k
+            "INR": 7350.55,
+            "USD": 88.50,
+            "AED": 325.10,
+            "EUR": 82.30,
+            "GBP": 70.10,
+        },
+        vendors: [
+            { name: "Tanishq", logo: "https://placehold.co/40x40/f43f5e/white?text=T", rate_per_gram_22k_inr: 6855.75, making_charge_percent: 15 },
+            { name: "Malabar Gold", logo: "https://placehold.co/40x40/22c55e/white?text=M", rate_per_gram_22k_inr: 6830.25, making_charge_percent: 12 },
+            { name: "Kalyan Jewellers", logo: "https://placehold.co/40x40/3b82f6/white?text=K", rate_per_gram_22k_inr: 6845.50, making_charge_percent: 14 },
+            { name: "BlueStone", logo: "https://placehold.co/40x40/8b5cf6/white?text=B", rate_per_gram_22k_inr: 6825.00, making_charge_percent: 18 },
+        ],
+        news: [
+            { title: "Gold Prices Surge Amid Global Economic Uncertainty", source: "Reuters", time: "2h ago", url: "#" },
+            { title: "Is Now the Right Time to Invest in Gold? Analysts Weigh In", source: "Bloomberg", time: "5h ago", url: "#" },
+            { title: "Central Banks Continue Gold Buying Spree in Q3", source: "Financial Times", time: "1d ago", url: "#" },
+            { title: "New Hallmarking Rules to Impact Indian Jewellery Market", source: "The Economic Times", time: "2d ago", url: "#" },
+        ],
+        historicalData: {
+            "INR": { "7": [7300, 7310, 7305, 7325, 7340, 7335, 7350], "30": [], "180": [], "365": [] },
+            "USD": { "7": [87.9, 88.0, 87.95, 88.1, 88.3, 88.2, 88.5], "30": [], "180": [], "365": [] },
+            "AED": { "7": [322, 323, 322.5, 323.5, 324, 324.5, 325], "30": [], "180": [], "365": [] },
+        }
+    };
+    
+    // Populate longer historical data
+    for (const currency in MOCK_API_DATA.historicalData) {
+        let base = MOCK_API_DATA.historicalData[currency]["7"][6];
+        MOCK_API_DATA.historicalData[currency]["30"] = Array.from({length: 30}, (_, i) => base - (30 - i) * (Math.random() * (base*0.001)) + Math.random()*(base*0.002));
+        MOCK_API_DATA.historicalData[currency]["180"] = Array.from({length: 180}, (_, i) => base - (180 - i) * (Math.random() * (base*0.0005)) + Math.random()*(base*0.001));
+        MOCK_API_DATA.historicalData[currency]["365"] = Array.from({length: 365}, (_, i) => base - (365 - i) * (Math.random() * (base*0.0003)) + Math.random()*(base*0.0008));
+    }
+
+
+    const CONVERSION_FACTORS = {
+        gram: 1,
+        kg: 1000,
+        tola: 11.6638,
+        ounce: 31.1035
+    };
+    
+    const PURITY_FACTORS = {
+        "24": 1.0,
+        "22": 0.9167,
+        "18": 0.75
+    };
+
+    const currencySymbols = {
+        INR: '₹', USD: '$', AED: 'د.إ', EUR: '€', GBP: '£'
+    };
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+        weight: 10,
+        unit: 'gram',
+        purity: '22',
+        currency: 'INR',
+        chartTimeframe: 7,
+        chartCurrency: 'INR'
+    };
+
+    // --- UI ELEMENTS ---
+    const weightInput = document.getElementById('weight');
+    const unitSelect = document.getElementById('unit');
+    const puritySelect = document.getElementById('purity-calc');
+    const currencySelect = document.getElementById('currency');
+    const calculatedPriceEl = document.getElementById('calculated-price');
+    const liveRateDisplayEl = document.getElementById('live-rate-display');
+    const comparisonTable = document.getElementById('comparison-table');
+    const newsContainer = document.getElementById('news-container');
+    const sections = document.querySelectorAll('.section');
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    // EMI Calculator elements
+    const emiAmountInput = document.getElementById('emi-amount');
+    const emiInterestInput = document.getElementById('emi-interest');
+    const emiTenureInput = document.getElementById('emi-tenure');
+    const calculateEmiBtn = document.getElementById('calculate-emi-btn');
+    const emiResultEl = document.getElementById('emi-result');
+    
+    // Investment Insight element
+    const investmentInsightEl = document.getElementById('investment-insight');
+
+    // Chart elements
+    const chartCanvas = document.getElementById('gold-chart');
+    const timeframeButtons = document.querySelectorAll('.timeframe-btn');
+    const chartCurrencySelect = document.getElementById('chart-currency');
+    let goldChart;
+
+    // --- CORE FUNCTIONS ---
+
+    const formatCurrency = (amount, currency) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(amount).replace(currency, currencySymbols[currency]).trim();
+    };
+
+    const calculatePrice = () => {
+        const weightInGrams = state.weight * CONVERSION_FACTORS[state.unit];
+        const liveRate24k = MOCK_API_DATA.liveRates[state.currency];
+        const purityFactor = PURITY_FACTORS[state.purity];
+        
+        const price = weightInGrams * liveRate24k * purityFactor;
+
+        calculatedPriceEl.textContent = formatCurrency(price, state.currency);
+        liveRateDisplayEl.textContent = `Live Rate: ${formatCurrency(liveRate24k, state.currency)}/gram (24K)`;
+        
+        // Update EMI amount input with calculated price
+        emiAmountInput.value = Math.round(price);
+    };
+
+    const populateComparison = () => {
+        const weightInGrams = state.weight * CONVERSION_FACTORS[state.unit];
+        const liveRate24kINR = MOCK_API_DATA.liveRates['INR'];
+        
+        let vendorsWithPrices = MOCK_API_DATA.vendors.map(vendor => {
+            // Vendors quote 22k price, so we use that as base
+            const baseGoldPrice = vendor.rate_per_gram_22k_inr * weightInGrams;
+            const makingCharges = baseGoldPrice * (vendor.making_charge_percent / 100);
+            const gst = (baseGoldPrice + makingCharges) * 0.03; // 3% GST in India
+            const totalPrice = baseGoldPrice + makingCharges + gst;
+            return { ...vendor, totalPrice };
+        });
+
+        const cheapestVendor = vendorsWithPrices.reduce((prev, curr) => prev.totalPrice < curr.totalPrice ? prev : curr);
+
+        comparisonTable.innerHTML = vendorsWithPrices.map(vendor => {
+            const isCheapest = vendor.name === cheapestVendor.name;
+            return `
+            <div class="card p-5 ${isCheapest ? 'cheapest' : ''} relative overflow-hidden">
+                ${isCheapest ? '<div class="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-4 py-1" style="transform: rotate(45deg); top: 15px; right: -35px;">Best Deal</div>' : ''}
+                <div class="flex items-center mb-4">
+                    <img src="${vendor.logo}" alt="${vendor.name}" class="w-10 h-10 rounded-full mr-4">
+                    <h3 class="text-xl font-bold">${vendor.name}</h3>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">22K Rate/gram:</span>
+                        <span class="font-semibold">${formatCurrency(vendor.rate_per_gram_22k_inr, 'INR')}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Making Charges:</span>
+                        <span class="font-semibold">${vendor.making_charge_percent}%</span>
+                    </div>
+                    <hr class="my-2 border-gray-200 dark:border-gray-600">
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="text-base font-medium">Total Price (${state.weight}${state.unit}):</span>
+                        <span class="text-2xl font-extrabold text-amber-600 dark:text-amber-400">${formatCurrency(vendor.totalPrice, 'INR')}</span>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    };
+
+    const populateNews = () => {
+        newsContainer.innerHTML = MOCK_API_DATA.news.map(article => `
+            <div class="card p-5 hover:shadow-lg transition-shadow duration-300">
+                <h3 class="font-bold mb-2">${article.title}</h3>
+                <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                    <span>${article.source}</span>
+                    <span>${article.time}</span>
+                </div>
+                <a href="${article.url}" target="_blank" rel="noopener noreferrer" class="text-amber-600 dark:text-amber-400 hover:underline text-sm mt-3 inline-block">Read more &rarr;</a>
+            </div>
+        `).join('');
+    };
+    
+    const calculateEMI = () => {
+        const p = parseFloat(emiAmountInput.value);
+        const r = parseFloat(emiInterestInput.value) / 12 / 100;
+        const n = parseFloat(emiTenureInput.value);
+        
+        if (p > 0 && r >= 0 && n > 0) {
+            const emi = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            emiResultEl.textContent = `Monthly EMI: ${formatCurrency(emi, state.currency)}`;
+        } else {
+            emiResultEl.textContent = '';
+        }
+    };
+    
+    const updateInvestmentInsight = () => {
+        const trendData = MOCK_API_DATA.historicalData[state.currency]['7'];
+        const startPrice = trendData[0];
+        const endPrice = trendData[trendData.length - 1];
+        const trend = (endPrice - startPrice) / startPrice;
+
+        let insight = '';
+        let bgColor = '';
+        let textColor = '';
+        let icon = '';
+
+        if (trend > 0.01) {
+            insight = "Strong upward trend this week. Consider buying as momentum is positive.";
+            bgColor = 'bg-green-100 dark:bg-green-900/40';
+            textColor = 'text-green-800 dark:text-green-300';
+            icon = 'fas fa-arrow-trend-up';
+        } else if (trend < -0.01) {
+            insight = "Prices are dipping. Could be a strategic time to buy at a lower price.";
+             bgColor = 'bg-red-100 dark:bg-red-900/40';
+            textColor = 'text-red-800 dark:text-red-300';
+            icon = 'fas fa-arrow-trend-down';
+        } else {
+            insight = "Market is stable. A good time for long-term, steady investment.";
+            bgColor = 'bg-blue-100 dark:bg-blue-900/40';
+            textColor = 'text-blue-800 dark:text-blue-300';
+            icon = 'fas fa-arrows-left-right';
+        }
+        
+        investmentInsightEl.className = `text-center p-4 rounded-lg text-sm ${bgColor} ${textColor}`;
+        investmentInsightEl.innerHTML = `<i class="${icon} mr-2"></i> ${insight}`;
+    };
+
+    // --- CHARTING ---
+    const renderChart = () => {
+        const data = MOCK_API_DATA.historicalData[state.chartCurrency][state.chartTimeframe];
+        const labels = Array.from({ length: state.chartTimeframe }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (state.chartTimeframe - 1 - i));
+            if(state.chartTimeframe <= 30) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        });
+        
+        const chartData = {
+            labels: labels,
+            datasets: [{
+                label: `Gold Price in ${state.chartCurrency}`,
+                data: data,
+                borderColor: 'rgba(245, 158, 11, 1)', // amber-500
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: state.chartTimeframe <= 30 ? 3 : 0,
+                pointBackgroundColor: 'rgba(245, 158, 11, 1)',
+            }]
+        };
+
+        if (goldChart) {
+            goldChart.data = chartData;
+            goldChart.update();
+        } else {
+            const ctx = chartCanvas.getContext('2d');
+            goldChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: value => formatCurrency(value, state.chartCurrency)
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                }
+            });
+        }
+    };
+    
+    // --- NAVIGATION & THEME ---
+
+    const handleNav = (hash) => {
+        sections.forEach(sec => sec.classList.remove('active'));
+        navLinks.forEach(link => link.classList.remove('active'));
+
+        const targetSection = document.querySelector(hash);
+        if (targetSection) targetSection.classList.add('active');
+
+        const targetLink = document.querySelector(`.nav-link[href="${hash}"]`);
+        if(targetLink) targetLink.classList.add('active');
+        
+        // Close mobile menu on navigation
+        document.getElementById('mobile-menu').classList.add('hidden');
+    };
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const toggleIcon = themeToggle.querySelector('i');
+    
+    const applyTheme = (theme) => {
+        if(theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+            toggleIcon.classList.remove('fa-moon');
+            toggleIcon.classList.add('fa-sun');
+        } else {
+            document.documentElement.classList.add('light');
+            document.documentElement.classList.remove('dark');
+            toggleIcon.classList.remove('fa-sun');
+            toggleIcon.classList.add('fa-moon');
+        }
+    };
+    
+    themeToggle.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.contains('dark');
+        localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        applyTheme(isDark ? 'light' : 'dark');
+    });
+
+
+    // --- EVENT LISTENERS ---
+    [weightInput, unitSelect, puritySelect, currencySelect].forEach(el => {
+        el.addEventListener('change', (e) => {
+            state[e.target.id.replace('-calc', '')] = e.target.value;
+            if(e.target.type === 'number') state.weight = parseFloat(e.target.value) || 0;
+            
+            // Re-render relevant parts
+            calculatePrice();
+            if(document.getElementById('compare').classList.contains('active')) {
+                populateComparison();
+            }
+        });
+    });
+
+    calculateEmiBtn.addEventListener('click', calculateEMI);
+
+    document.body.addEventListener('click', (e) => {
+        if (e.target.closest('.nav-link')) {
+            e.preventDefault();
+            const link = e.target.closest('.nav-link');
+            handleNav(link.getAttribute('href'));
+        }
+    });
+
+    document.getElementById('mobile-menu-button').addEventListener('click', () => {
+        document.getElementById('mobile-menu').classList.toggle('hidden');
+    });
+
+    timeframeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            timeframeButtons.forEach(btn => btn.classList.remove('bg-white', 'dark:bg-gray-900', 'text-amber-600', 'shadow'));
+            button.classList.add('bg-white', 'dark:bg-gray-900', 'text-amber-600', 'shadow');
+            state.chartTimeframe = parseInt(button.dataset.days);
+            renderChart();
+        });
+    });
+
+    chartCurrencySelect.addEventListener('change', (e) => {
+        state.chartCurrency = e.target.value;
+        renderChart();
+    });
+
+    // --- INITIALIZATION ---
+    function init() {
+        // Apply saved theme or system preference
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(savedTheme);
+
+        // Initial Calculations
+        weightInput.value = state.weight;
+        unitSelect.value = state.unit;
+        puritySelect.value = state.purity;
+        currencySelect.value = state.currency;
+        chartCurrencySelect.value = state.chartCurrency;
+
+        calculatePrice();
+        populateComparison();
+        populateNews();
+        updateInvestmentInsight();
+        renderChart();
+
+        // Handle initial navigation if hash is present
+        if(window.location.hash) {
+            handleNav(window.location.hash);
+        }
+    }
+
+    init();
+});
+</script>
+</body>
+</html>
